@@ -6,7 +6,7 @@
 //  Copyright © 2018 veladan. All rights reserved.
 //
 
-@testable import BoilerLib
+@testable import BLNetwork
 import XCTest
 
 class MockAPIClient: Http.Client {
