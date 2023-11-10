@@ -120,3 +120,20 @@ public extension Http.Endpoint where Response == Void, Body: Encodable {
             body: body) { _ in () }
     }
 }
+
+public extension Http.Endpoint where Response: Decodable, Body == Void {
+  convenience init(method: Http.Method,
+                   path: Http.Path) {
+    self.init(
+      method: method,
+      path: path,
+      parameters: nil,
+      body: nil)  {
+        let decoder = JSONDecoder()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = Http.Constant.railsDefaultDateFormat
+        decoder.dateDecodingStrategy = .formatted(dateFormatter)
+        return try decoder.decode(Response.self, from: $0)
+      }
+  }
+}
