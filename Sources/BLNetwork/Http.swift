@@ -137,3 +137,14 @@ public extension Http.Endpoint where Response: Decodable, Body == Void {
       }
   }
 }
+
+public extension Http.Endpoint where Response == Void, Body == Void {
+  convenience init(method: Http.Method,
+                   path: Http.Path) {
+    self.init(
+      method: method,
+      path: path,
+      parameters: nil,
+      body: nil) { _ in () }
+  }
+}
