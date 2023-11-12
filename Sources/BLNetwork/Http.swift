@@ -11,37 +11,40 @@ import UIKit
 
 public enum Http {
 
-enum Constant {
+  enum Constant {
     static let railsDefaultDateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-}
+  }
 
-public enum Result<Response> {
+  public enum Result<Response> {
     case success(Response)
     case error(Int, String)
-}
+  }
 
-public enum Method: String {
+  public enum Method: String {
     case get = "GET"
     case post = "POST"
     case put = "PUT"
     case patch = "PATCH"
     case delete = "DELETE"
-}
+  }
 
-public enum Error: Swift.Error {
+  public enum Error: Swift.Error {
     case invalidResponse
     case information(code: Int, message: String)
     case redirection(code: Int, message: String)
     case client(code: Int, message: String)
     case server(code: Int, message: String)
-}
+  }
 
-// MARK: - Http Endpoint
+  // MARK: - Http Endpoint
 
-public typealias Parameters = [String: Any]
-public typealias Path = String
+  public typealias Parameters = [String: Any]
+  public typealias Path = String
 
-public final class Endpoint<Response, Body> {
+  /// Use this struct when Body is Void. When request has no body, use this struct
+  public struct NoBody: Codable {}
+
+  public final class Endpoint<Response, Body> {
     let method: Method
     let path: Path
     let parameters: Parameters?
@@ -58,67 +61,73 @@ public final class Endpoint<Response, Body> {
                 parameters: Parameters? = nil,
                 body: Body? = nil,
                 decode: @escaping (Data) throws -> Response) {
-        self.method = method
-        self.path = path
-        self.parameters = parameters
-        self.body = body
-        self.decode = decode
+      self.method = method
+      self.path = path
+      self.parameters = parameters
+      self.body = body
+      self.decode = decode
     }
-}
+  }
 
-// MARK: - Http Request
+  // MARK: - Http Request
 
-// class Request {
-//
-//    func baseUrl() -> String {
-//        return Configuration.serverURL + Configuration.basePath
-//    }
-//
-//    func endpointUrl(endpoint: String) -> String {
-//        return baseUrl() + endpoint
-//    }
-//
-//    func customHeaders() -> [String: String] {
-//        return [:]
-//    }
-//
-//    //    curl -H 'Content-Type: application/json'
-//    //        -H 'Accept: application/json'
-//    //        -H 'secret: aakjsdklfj;ajasdfghlkajsdkfj'
-//    //        -X POST http://localhost:3000/api/v1/employee_user/login -d "{\"email\":\"vela.dan@gmail.com\",
-//    //                                                                     \"password\":\"tQDJC43S1OmTvnitug9edA\"}"
-// }
+  // class Request {
+  //
+  //    func baseUrl() -> String {
+  //        return Configuration.serverURL + Configuration.basePath
+  //    }
+  //
+  //    func endpointUrl(endpoint: String) -> String {
+  //        return baseUrl() + endpoint
+  //    }
+  //
+  //    func customHeaders() -> [String: String] {
+  //        return [:]
+  //    }
+  //
+  //    //    curl -H 'Content-Type: application/json'
+  //    //        -H 'Accept: application/json'
+  //    //        -H 'secret: aakjsdklfj;ajasdfghlkajsdkfj'
+  //    //        -X POST http://localhost:3000/api/v1/employee_user/login -d "{\"email\":\"vela.dan@gmail.com\",
+  //    //                                                                     \"password\":\"tQDJC43S1OmTvnitug9edA\"}"
+  // }
 
 }  // struct Http
 
 // MARK: - Endpoint extensions
 
 public extension Http.Endpoint where Response: Swift.Decodable, Body: Swift.Encodable {
-    convenience init(method: Http.Method,
-                     path: Http.Path,
-                     parameters: Http.Parameters? = nil,
-                     body: Body?) {
-        self.init(method: method, path: path, parameters: parameters, body: body) {
-            let decoder = JSONDecoder()
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = Http.Constant.railsDefaultDateFormat
-            decoder.dateDecodingStrategy = .formatted(dateFormatter)
-            return try decoder.decode(Response.self, from: $0)
-        }
+  convenience init(method: Http.Method,
+                   path: Http.Path,
+                   parameters: Http.Parameters? = nil,
+                   body: Body?) {
+    self.init(method: method, path: path, parameters: parameters, body: body) {
+      let decoder = JSONDecoder()
+      let dateFormatter = DateFormatter()
+      dateFormatter.dateFormat = Http.Constant.railsDefaultDateFormat
+      decoder.dateDecodingStrategy = .formatted(dateFormatter)
+      do {
+        let decoded = try decoder.decode(Response.self, from: $0)
+        return decoded
+      } catch let error {
+        print(error)
+        fatalError(error.localizedDescription)
+      }
     }
+  }
 }
 
 public extension Http.Endpoint where Response == Void, Body: Encodable {
-    convenience init(method: Http.Method,
-                     path: Http.Path,
-                     parameters: Http.Parameters? = nil,
-                     body: Body?) {
-        self.init(
-            method: method,
-            path: path,
-            parameters: parameters,
-            body: body) { _ in () }
-    }
+  convenience init(method: Http.Method,
+                   path: Http.Path,
+                   parameters: Http.Parameters? = nil,
+                   body: Body?) {
+    self.init(
+      method: method,
+      path: path,
+      parameters: parameters,
+      body: body) { _ in () }
+  }
 }
 
 public extension Http.Endpoint where Response: Decodable, Body == Void {
